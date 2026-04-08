@@ -37,13 +37,12 @@ const (
 
 func TestCopy(t *testing.T) {
 	tests := []struct {
-		description    string
-		src            string
-		dst            string
-		commands       util.Command
-		recursive      bool
-		gsutilNotFound bool
-		shouldErr      bool
+		description string
+		src         string
+		dst         string
+		commands    util.Command
+		recursive   bool
+		shouldErr   bool
 	}{
 		{
 			description: "copy single file",
@@ -65,22 +64,10 @@ func TestCopy(t *testing.T) {
 			commands:    testutil.CmdRunOutErr(fmt.Sprintf("gsutil cp %s %s", file, gcsFile), "logs", fmt.Errorf("file not found")),
 			shouldErr:   true,
 		},
-		{
-			description:    "gsutil not found",
-			src:            file,
-			dst:            gcsFile,
-			gsutilNotFound: true,
-			shouldErr:      true,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.gsutilNotFound {
-				t.Override(&findGsutil, func() (string, error) { return "", fmt.Errorf("gsutil not found") })
-			} else {
-				t.Override(&findGsutil, func() (string, error) { return "gsutil", nil })
-				t.Override(&util.DefaultExecCommand, test.commands)
-			}
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			gcs := NewGsutil()
 			err := gcs.Copy(context.Background(), test.src, test.dst, test.recursive)
