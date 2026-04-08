@@ -38,6 +38,8 @@ import (
 
 const GsutilExec = "gsutil"
 
+var findGsutil = func() (string, error) { return exec.LookPath(GsutilExec) }
+
 type Gsutil interface {
 	Copy(ctx context.Context, src, dst string, recursive bool) error
 }
@@ -51,12 +53,16 @@ func NewGsutil() Gsutil {
 
 // Copy calls `gsutil cp [-r] <source_url> <destination_url>
 func (g *gsutil) Copy(ctx context.Context, src, dst string, recursive bool) error {
+	gsutilProgram, err := findGsutil()
+	if err != nil {
+		return fmt.Errorf("failed to find %s: %w", GsutilExec, err)
+	}
 	args := []string{"cp"}
 	if recursive {
 		args = append(args, "-r")
 	}
 	args = append(args, src, dst)
-	cmd := exec.CommandContext(ctx, GsutilExec, args...)
+	cmd := exec.CommandContext(ctx, gsutilProgram, args...)
 	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return fmt.Errorf("copy file(s) with %s failed: %w", GsutilExec, err)
